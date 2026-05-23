@@ -21,7 +21,12 @@ class MarkdownHtmlFilterTemplate < Tilt::Template
   end
 
   def evaluate(scope, locals, &block)
+    # AbsoluteSourceFilter only rewrites relative image paths when image_base_url
+    # has a scheme+host, so it emits http://utensil.github.io/... — mixed content
+    # on the https Pages site. Rewrite those image srcs to root-relative so they
+    # adapt to protocol and host automatically (external images are left alone).
     @output ||= @engine.call(data)[:output].to_s
+                  .gsub(%r{(src=["'])https?://utensil\.github\.io/}, '\1/')
   end
 
 end
