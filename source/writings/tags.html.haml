@@ -15,15 +15,6 @@ blog: writings
         = tag
       %ul.listing
         - articles.each do |article|
-          .post
-            %h2
-              %a{:href => article.url}
-                =article.data['title']
-            %div
-              != article_body(article)
-          -# %li.listing-item
-          -#   %time{:datetime => article.date}=article.date.strftime('%Y-%m-%d')
-          -#   %a{:href => article.url}=article.title
-            -# %div
-            -#   %backquote
-            -#     = article.summary
+          %li.listing-item
+            %time{:datetime => article.date}=article.date.strftime('%Y-%m-%d')
+            %a{:href => article.url}=article.data['title']
