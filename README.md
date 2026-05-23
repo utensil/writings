@@ -3,7 +3,7 @@ utensil/writings
 
 [![publish](https://github.com/utensil/writings/actions/workflows/ruby.yml/badge.svg)](https://github.com/utensil/writings/actions/workflows/ruby.yml)
 
-Utensil's writings (随笔 / 文章), built with [Middleman](https://middlemanapp.com/).
+Utensil's writings (书写), built with [Middleman](https://middlemanapp.com/). See also [about](source/writings/about.html.md).
 
 Published at <https://utensil.github.io/writings/>.
 
