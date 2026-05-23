@@ -150,11 +150,12 @@ set :markdown_engine, :MarkdownHtmlFilter
 #   page "/writings/*.html"
 # end
 
-page "/tech/*.html", :layout => 'blog_layout'
 page "/writings/*.html", :layout => 'blog_layout'
-page "/blogs/*.html", :layout => 'blog_layout_en'
 
 set :layout, false
+
+# Served as a GitHub project page at https://utensil.github.io/writings/
+set :http_prefix, "/writings/"
 
 require "middleman-blog"
 require "middleman-blog/blog_data"
@@ -198,27 +199,26 @@ class PreserveBlogFileBasenamePaths
   def manipulate_resource_list(resources)
     resources.each do |resource|
       source_file = resource.source_file.to_s
-      match = source_file.match(%r{/source/(tech|writings|blogs)/(\d{4})-(\d{2})-(\d{2})-(.+)\.(md|haml)\z})
-      next unless match
-
-      article_name = match[5]
-      extension = article_name.end_with?('.html') ? '' : '.html'
-      resource.destination_path = "#{match[1]}/#{match[2]}/#{match[3]}/#{match[4]}/#{article_name}#{extension}"
-      def resource.content_type
-        'text/html; charset=utf-8'
+      match = source_file.match(%r{/source/(writings)/(\d{4})-(\d{2})-(\d{2})-(.+)\.(md|haml)\z})
+      if match
+        article_name = match[5]
+        extension = article_name.end_with?('.html') ? '' : '.html'
+        resource.destination_path = "writings/#{match[2]}/#{match[3]}/#{match[4]}/#{article_name}#{extension}"
+        def resource.content_type
+          'text/html; charset=utf-8'
+        end
       end
+
+      # This site is served as a GitHub project page at /writings/, so http_prefix
+      # already scopes every URL under /writings/. Drop the leading "writings/" path
+      # segment from the build output (posts, index, calendar, tags, about, images)
+      # so the public URL stays https://utensil.github.io/writings/... exactly as it
+      # was when this lived at the user-site root.
+      resource.destination_path = resource.destination_path.sub(%r{\Awritings/}, '')
     end
 
     resources
   end
-end
-
-activate :blog do |tech_blog|
-  tech_blog.name = 'tech'
-  tech_blog.prefix = 'tech'
-  tech_blog.sources = '{year}-{month}-{day}-{title}'
-  tech_blog.permalink = '/{year}/{month}/{day}/{title}.html'
-  tech_blog.layout = 'blog_layout'
 end
 
 activate :blog do |writings_blog|
@@ -227,16 +227,6 @@ activate :blog do |writings_blog|
   writings_blog.sources = '{year}-{month}-{day}-{title}'
   writings_blog.permalink = '/{year}/{month}/{day}/{title}.html'
   writings_blog.layout = 'blog_layout'
-end
-
-activate :blog do |blogs_blog|
-  blogs_blog.name = 'blogs'
-  blogs_blog.prefix = 'blogs'
-  blogs_blog.sources = '{year}-{month}-{day}-{title}'
-  blogs_blog.permalink = '/{year}/{month}/{day}/{title}.html'
-  blogs_blog.layout = 'blog_layout_en'
-  blogs_blog.paginate = true
-  blogs_blog.per_page = 5
 end
 
 after_configuration do

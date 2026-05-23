@@ -1,52 +1,32 @@
-utensil.github.io
-=====================
+utensil/writings
+================
 
-[![Build Status](https://github.com/utensil/utensil.github.io/actions/workflows/ruby.yml/badge.svg)](https://github.com/utensil/utensil.github.io/actions/workflows/ruby.yml) 
+[![publish](https://github.com/utensil/writings/actions/workflows/ruby.yml/badge.svg)](https://github.com/utensil/writings/actions/workflows/ruby.yml)
 
-My personal blog, including my technical blog and my writings.
+Utensil's writings (随笔 / 文章), built with [Middleman](https://middlemanapp.com/).
 
-How To Build Manually
-------------------------
+Published at <https://utensil.github.io/writings/>.
 
-### Prepare
+This repository was split out of [utensil/utensil.github.io](https://github.com/utensil/utensil.github.io)
+with full git history and original timestamps preserved (via `git filter-repo`).
+Its companion is [utensil/tech](https://github.com/utensil/tech).
+
+Build
+-----
 
 ```
-#for editing the source
-git clone --depth 1 -b middleman https://github.com/utensil/utensil.github.io.git utensil-middleman
-cd utensil-middleman/
-sudo gem install bundler
 bundle
-
-#for publishing
-cd ..
-git clone --depth 1 -b master https://github.com/utensil/utensil.github.io.git utensil.github.io
-```
-### Run
-
-```
-cd utensil-middleman/
-bundle exec middleman server
+bundle exec middleman server   # local preview
+bundle exec middleman build    # output in build/
 ```
 
-### Build
-
-```
-cd utensil-middleman/
-bundle exec middleman build
-```
-
-### Publish
-
-```
-cd utensil.github.io
-cp -rf ../utensil-middleman/build/* ./
-git commit -a -m 'commit log'
-git push origin
-```
+A push to the `middleman` branch builds the site and deploys it to GitHub Pages
+via `.github/workflows/ruby.yml`.
 
 Licence
---------
+-------
 
-Codes are licensed by MIT License, see `LICENSE.md`. Blog contents are licensed by [(CC) BY-NC-ND](http://creativecommons.org/licenses/by-nc-nd/3.0/).
+Code is licensed under the MIT License (see `LICENSE.md`). Blog content is
+licensed under [(CC) BY-NC-ND](http://creativecommons.org/licenses/by-nc-nd/3.0/).
 
-Copyright (c) 2011-2021 Utensil (https://github.com/utensil)
+Copyright (c) Utensil (https://github.com/utensil)
