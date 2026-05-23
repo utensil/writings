@@ -5,7 +5,11 @@ source 'https://rubygems.org/'
 gem 'sass', '~> 3.7'
 gem 'ya2yaml', '~> 0.31'
 gem 'haml', '~> 6.3'
-gem 'middleman', '4.6.2'
+gem 'middleman', '4.6.3'
+# middleman-core 4.6.3 widens padrino-helpers to < 0.17, but 0.16.x calls
+# Haml's removed block_is_haml? and breaks rendering under haml 6 — pin to the
+# 0.15.x that 4.6.2 used and that works with haml 6.3.
+gem 'padrino-helpers', '0.15.3'
 gem 'middleman-blog', '4.2.0'
 gem 'middleman-minify-html', '~> 3.4'
 gem 'html-pipeline', '~> 2.14'
