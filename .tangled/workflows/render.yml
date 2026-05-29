@@ -35,19 +35,21 @@ steps:
       export HOME="${HOME:-/tmp/cihome}"; mkdir -p "$HOME"
       export GEM_HOME="$HOME/.gem"; export PATH="$GEM_HOME/bin:$PATH"
 
-      echo "::group::env"
+      echo "::group::env + symlink zoneinfo"
       ruby --version; gem --version; node --version
-      # nixery has tzdata in the closure but at /nix/store/<hash>-tzdata-XXXX/share/zoneinfo,
-      # not /usr/share/zoneinfo where tzinfo gem looks by default. Filter on `-tzdata-`
-      # in the store path — `-name zoneinfo` alone picks up Python's bundled zoneinfo
-      # module first, which has none of the POSIX zoneinfo files tzinfo expects.
-      TZDIR_FOUND="$(find /nix/store -maxdepth 5 -type d -name zoneinfo -path '*-tzdata*' 2>/dev/null | head -1)"
-      if [ -n "$TZDIR_FOUND" ] && [ -f "$TZDIR_FOUND/Etc/UTC" ]; then
-        export TZDIR="$TZDIR_FOUND"
-        echo "TZDIR=$TZDIR"
+      # tzinfo gem's ZoneinfoDataSource only looks at hardcoded search_path
+      # (/usr/share/zoneinfo, /usr/share/lib/zoneinfo, /etc/zoneinfo) — it
+      # ignores TZDIR env. Locate the nix-store tzdata's zoneinfo and symlink
+      # /usr/share/zoneinfo to it (filter on '*-tzdata*' so we don't grab
+      # Python's bundled lib/python*/zoneinfo, which has no POSIX zone files).
+      TZDATA_DIR="$(find /nix/store -maxdepth 5 -type d -name zoneinfo -path '*-tzdata*' 2>/dev/null | head -1)"
+      if [ -n "$TZDATA_DIR" ] && [ -f "$TZDATA_DIR/Etc/UTC" ]; then
+        mkdir -p /usr/share 2>/dev/null || true
+        ln -sfn "$TZDATA_DIR" /usr/share/zoneinfo
+        ls -la /usr/share/zoneinfo
+        export TZDIR="/usr/share/zoneinfo"  # belt+suspenders for tzset(3) consumers
       else
-        echo "::error::tzdata zoneinfo not found under /nix/store (got: '$TZDIR_FOUND')"
-        echo "--- diagnostic: any zoneinfo dirs ---"
+        echo "::error::tzdata zoneinfo not found under /nix/store (got: '$TZDATA_DIR')"
         find /nix/store -maxdepth 5 -type d -name zoneinfo 2>/dev/null | head -5
         exit 1
       fi
