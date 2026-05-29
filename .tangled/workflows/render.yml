@@ -37,6 +37,15 @@ steps:
 
       echo "::group::env"
       ruby --version; gem --version; node --version
+      # nixery has tzdata in the closure but at /nix/store/<hash>-tzdata-XXXX/share/zoneinfo,
+      # not /usr/share/zoneinfo where tzinfo gem looks by default. Point TZDIR at it.
+      TZDIR_FOUND="$(find /nix/store -maxdepth 4 -type d -name zoneinfo 2>/dev/null | head -1)"
+      if [ -n "$TZDIR_FOUND" ]; then
+        export TZDIR="$TZDIR_FOUND"
+        echo "TZDIR=$TZDIR"
+      else
+        echo "::warning::no zoneinfo dir found in /nix/store — middleman config may fail on Time.zone="
+      fi
       echo "::endgroup::"
 
       echo "::group::bundle install"
