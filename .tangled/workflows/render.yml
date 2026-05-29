@@ -1,0 +1,68 @@
+engine: nixery
+
+# Build the Middleman site on Spindle (the GH Actions equivalent lives at
+# .github/workflows/ruby.yml and deploys to utensil.github.io/writings). This
+# one publishes the rendered output to the `site` branch → utensil.tngl.sh/writings.
+#
+# Same template as tech/.tangled/workflows/render.yml — Middleman + Ruby 3.4.
+# Two independent lanes, same source `middleman` branch, no cross-deps.
+when:
+  - event: ["push"]
+    branch: middleman
+
+dependencies:
+  nixpkgs:
+    - bash
+    - coreutils
+    - gnugrep
+    - findutils
+    - git
+    - openssh
+    - cacert
+    - gcc           # native gem builds (commonmarker etc.)
+    - gnumake
+    - ruby_3_4      # Gemfile pins ruby '3.4.8'
+    - nodejs        # middleman-blog asset pipeline JS runtime
+    - tzdata
+
+steps:
+  - name: build middleman + publish to site
+    command: |
+      set -euo pipefail
+      export SSL_CERT_FILE="${SSL_CERT_FILE:-${NIX_SSL_CERT_FILE:-/etc/ssl/certs/ca-bundle.crt}}"
+      libstdcpp_dir="$(dirname "$(find /nix/store -maxdepth 4 -name 'libstdc++.so.6' 2>/dev/null | head -1)")"
+      export LD_LIBRARY_PATH="${libstdcpp_dir}:${LD_LIBRARY_PATH:-}"
+      export HOME="${HOME:-/tmp/cihome}"; mkdir -p "$HOME"
+      export GEM_HOME="$HOME/.gem"; export PATH="$GEM_HOME/bin:$PATH"
+
+      echo "::group::env"
+      ruby --version; gem --version; node --version
+      echo "::endgroup::"
+
+      echo "::group::bundle install"
+      gem install --no-document bundler
+      bundle config set --local path "$HOME/.bundle"
+      bundle install --jobs 4
+      echo "::endgroup::"
+
+      echo "::group::middleman build"
+      bundle exec middleman build --verbose
+      test -d build || { echo "::error::middleman build/ missing"; exit 1; }
+      du -sh build/ | head -1
+      echo "::endgroup::"
+
+      echo "::group::publish build/ → site branch"
+      : "${DEPLOY_SSH_KEY_B64:?DEPLOY_SSH_KEY_B64 secret not set on tangled writings repo}"
+      mkdir -p "$HOME/.ssh"; chmod 700 "$HOME/.ssh"
+      grep -q ':0:0:' /etc/passwd || echo "root:x:0:0:root:$HOME:/bin/sh" >> /etc/passwd 2>/dev/null || true
+      printf '%s' "$DEPLOY_SSH_KEY_B64" | base64 -d > "$HOME/.ssh/deploy"; chmod 600 "$HOME/.ssh/deploy"
+      export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+      export GIT_AUTHOR_NAME=tangled-ci GIT_AUTHOR_EMAIL=ci@utensil.tngl.sh
+      export GIT_COMMITTER_NAME=tangled-ci GIT_COMMITTER_EMAIL=ci@utensil.tngl.sh
+      cd build && git init -q && git checkout -q -b site && git add -A
+      git commit -q -m "render writings $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      git push --force "git@tangled.org:utensil.tngl.sh/writings" site
+      echo "pushed rendered writings → branch site"
+      echo "::endgroup::"
+
+      echo "✅ writings rendered + published"
